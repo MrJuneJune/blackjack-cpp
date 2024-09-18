@@ -20,6 +20,7 @@ set(SOURCES
     src/gameplay/characters/player.cpp
     src/gameplay/props/deck.cpp
     src/state/game.cpp
+    src/graphics/utils/util.cpp
 )
 
 set(DIRECTORIES
@@ -27,13 +28,28 @@ set(DIRECTORIES
     src/gameplay/props
     src/io
     src/state
+    src/graphics
+    src/graphics/utils
 )
 
-# Add the executable
-add_executable(blackjack ${SOURCES} src/io/key_action.h)
+# Ignore warning
+add_definitions(-DGL_SILENCE_DEPRECATION)
 
-target_include_directories(blackjack
-  PRIVATE DIRECTORIES)
+## Third Party 
+# glfw
+add_subdirectory(${CMAKE_SOURCE_DIR}/third_party/glfw)
+
+# Find OpenGL (required by GLFW)
+find_package(OpenGL REQUIRED)
+find_package(GLEW REQUIRED)
+
+
+add_executable(blackjack ${SOURCES})
+
+target_link_libraries(blackjack PRIVATE glfw OpenGL::GL GLEW::GLEW)
+
+# Include directories for your source files
+target_include_directories(blackjack PRIVATE ${DIRECTORIES} ${GLEW_INCLUDE_DIRS})
 
 # Add build type options (Debug and Release)
 if(NOT CMAKE_BUILD_TYPE)
