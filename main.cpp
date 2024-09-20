@@ -1,52 +1,118 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
-#include <cstdint>
+#include <webp/decode.h>
+#include <fstream>
 #include <iostream>
-#include <string>
-#include "gameplay/characters/player.h"
-#include "gameplay/props/deck.h"
+#include <vector>
+#include "graphics/shader/ebo.h"
+#include "graphics/shader/shader.h"
+#include "graphics/shader/vao.h"
+#include "graphics/shader/vbo.h"
 #include "graphics/utils/util.h"
-#include "io/key_action.h"
-#include "state/game.h"
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
-  glViewport(0, 0, width, height);
-}
+// Set up vertex data and buffers
+float vertices[] = {
+    // positions          // texture coords
+    0.5f,  0.5f,  0.0f, 1.0f, 1.0f,  // top right
+    0.5f,  -0.5f, 0.0f, 1.0f, 0.0f,  // bottom right
+    -0.5f, -0.5f, 0.0f, 0.0f, 0.0f,  // bottom left
+    -0.5f, 0.5f,  0.0f, 0.0f, 1.0f   // top left
+};
+unsigned int indices[] = {
+    0, 1, 3,  // first triangle
+    1, 2, 3   // second triangle
+};
 
 int main() {
-  blackjack::Player player;
-  blackjack::Player dealer;
-  blackjack::Deck deck;
-
-  blackjack::Game game(&player, &dealer, &deck);
-
-  game.send_action(blackjack::KeyAction::HIT);
-  game.send_action(blackjack::KeyAction::STAND);
-
+  // Initialize GLFW
   if (!glfwInit()) {
     std::cerr << "Failed to initialize GLFW" << std::endl;
     return -1;
   }
 
+  // Set OpenGL version to 3.3
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+  // Create a window
   GLFWwindow* window =
-      glfwCreateWindow(800, 600, "Card Game", nullptr, nullptr);
+      glfwCreateWindow(800, 600, "Blackjack game", nullptr, nullptr);
   if (!window) {
-    std::cerr << "Failed to create GLFW window" << std::endl;
+    std::cerr << "Failed to create window" << std::endl;
     glfwTerminate();
     return -1;
   }
-
   glfwMakeContextCurrent(window);
-  glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
+  // Initialize GLEW
+  glewExperimental = GL_TRUE;
+  if (glewInit() != GLEW_OK) {
+    std::cerr << "Failed to initialize GLEW" << std::endl;
+    return -1;
+  }
+
+  // Compile the vertex and fragment shaders from files
+  Shader shader("./src/graphics/vertex_shader.glsl",
+                "./src/graphics/fragment_shader.glsl");
+
+  // Generates Vertex Array Object and binds it
+  VAO VAO1;
+  VAO1.Bind();
+
+  // Generates Vertex Buffer Object and links it to vertices
+  VBO VBO1(vertices, sizeof(vertices));
+  // Generates Element Buffer Object and links it to indices
+  EBO EBO1(indices, sizeof(indices));
+
+  // Links VBO attributes such as coordinates and colors to VAO
+  VAO1.LinkAttrib(VBO1, 0, 3, GL_FLOAT, 5 * sizeof(float), (void*)0);
+  VAO1.LinkAttrib(VBO1, 1, 2, GL_FLOAT, 5 * sizeof(float),
+                  (void*)(3 * sizeof(float)));
+
+  // Unbind all to prevent accidentally modifying them
+  VAO1.Unbind();
+  VBO1.Unbind();
+  EBO1.Unbind();
+
+  // Load the WebP texture
+  int img_width, img_height;
+  GLuint texture = loadWebPImage("/Users/mingtongyuan/Downloads/nice_farm.webp",
+                                 &img_width, &img_height);
+  if (texture == 0) {
+    return -1;
+  }
+
+  // Bind texture unit
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, texture);
+
+  // For adjusting the size
+  glUniform1i(glGetUniformLocation(shader.ID, "texture1"), 0);
+
+  // Render loop
   while (!glfwWindowShouldClose(window)) {
-    drawCard(0.7f, -0.5f, 0.3f, 0.5f, "10", "diamonds");
+    // Clear the screen
+    glClear(GL_COLOR_BUFFER_BIT);
+    // Tell OpenGL which Shader Program we want to use
+    shader.Activate();
 
+    // Bind texture and draw the quad
+    glBindTexture(GL_TEXTURE_2D, texture);
+    VAO1.Bind();
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+    // Swap buffers and poll events
     glfwSwapBuffers(window);
     glfwPollEvents();
   }
 
+  // Delete all the objects we've created
+  VAO1.Delete();
+  VBO1.Delete();
+  EBO1.Delete();
+  shader.Delete();
+  glfwDestroyWindow(window);
   glfwTerminate();
-
   return 0;
 }

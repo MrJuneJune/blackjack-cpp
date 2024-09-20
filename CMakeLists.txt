@@ -21,6 +21,11 @@ set(SOURCES
     src/gameplay/props/deck.cpp
     src/state/game.cpp
     src/graphics/utils/util.cpp
+    src/graphics/shader/shader.cpp
+    src/graphics/shader/vbo.cpp
+    src/graphics/shader/ebo.cpp
+    src/graphics/shader/vao.cpp
+    src/graphics/include/stb.cpp
 )
 
 set(DIRECTORIES
@@ -30,6 +35,8 @@ set(DIRECTORIES
     src/state
     src/graphics
     src/graphics/utils
+    src/graphics/utils/include
+    src/graphics/shader/
 )
 
 # Ignore warning
@@ -43,10 +50,15 @@ add_subdirectory(${CMAKE_SOURCE_DIR}/third_party/glfw)
 find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
 
+# Find libwebp
+find_library(WEBP_LIBRARY webp REQUIRED)
+
+# Include WebP headers (adjust the path to where libwebp is installed, if needed)
+include_directories("/usr/include/webp")
 
 add_executable(blackjack ${SOURCES})
 
-target_link_libraries(blackjack PRIVATE glfw OpenGL::GL GLEW::GLEW)
+target_link_libraries(blackjack PRIVATE glfw OpenGL::GL GLEW::GLEW ${WEBP_LIBRARY})
 
 # Include directories for your source files
 target_include_directories(blackjack PRIVATE ${DIRECTORIES} ${GLEW_INCLUDE_DIRS})

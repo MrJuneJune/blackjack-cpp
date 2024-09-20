@@ -1,6 +1,12 @@
+#include "./util.h"
 #include <GLFW/glfw3.h>
+#include <webp/decode.h>
 #include <cmath>
+#include <fstream>
 #include <iostream>
+#include <sstream>
+#include <string>
+#include <vector>
 
 // Using old API, CPU usages of it
 void drawCircle(float cx, float cy, float r, int num_segments) {
@@ -101,4 +107,78 @@ void drawCard(float x, float y, float width, float height,
     glColor3f(0.0f, 0.0f, 0.0f);
     drawClub(x + width / 2, y + height / 2, 0.2f * height);
   }
+}
+
+// Function to load a WebP image and return the decoded image data
+GLuint loadWebPImage(const char* filepath, int* width, int* height) {
+  // Open the WebP file
+  std::ifstream file(filepath, std::ios::binary | std::ios::ate);
+  if (!file.is_open()) {
+    std::cerr << "Failed to open file: " << filepath << std::endl;
+    return 0;
+  }
+
+  // Get file size and read file into buffer
+  std::streamsize size = file.tellg();
+  file.seekg(0, std::ios::beg);
+  std::vector<char> buffer(size);
+  if (!file.read(buffer.data(), size)) {
+    std::cerr << "Failed to read file: " << filepath << std::endl;
+    return 0;
+  }
+
+  // Decode the WebP image
+  uint8_t* imageData = WebPDecodeRGBA(reinterpret_cast<uint8_t*>(buffer.data()),
+                                      size, width, height);
+
+  if (!imageData) {
+    std::cerr << "Failed to decode WebP image: " << filepath << std::endl;
+    return 0;
+  }
+
+  // Flip the image vertically (manually swap rows)
+  int rowSize = 4 * (*width);  // 4 bytes per pixel (RGBA)
+  uint8_t* flippedData =
+      new uint8_t[*width * *height * 4];  // Allocate memory for flipped image
+
+  for (int y = 0; y < *height; ++y) {
+    memcpy(flippedData + y * rowSize, imageData + (*height - 1 - y) * rowSize,
+           rowSize);
+  }
+
+  // Generate an OpenGL texture
+  GLuint textureID;
+  glGenTextures(1, &textureID);
+  glBindTexture(GL_TEXTURE_2D, textureID);
+
+  // Upload the image data to the texture
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, *width, *height, 0, GL_RGBA,
+               GL_UNSIGNED_BYTE, flippedData);
+
+  // Set texture parameters
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+  // Free the WebP image memory
+  WebPFree(imageData);
+
+  return textureID;
+}
+
+std::string load_file_as_string(const char* filepath) {
+  std::ifstream file;
+  std::stringstream stream_buff;
+
+  file.open(filepath);
+  if (!file.is_open()) {
+    std::cerr << "Failed to open shader file: " << filepath << std::endl;
+    return "";
+  }
+
+  stream_buff << file.rdbuf();
+  file.close();
+
+  return stream_buff.str();
 }
