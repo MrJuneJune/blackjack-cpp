@@ -26,6 +26,7 @@ set(SOURCES
     src/graphics/shader/ebo.cpp
     src/graphics/shader/vao.cpp
     src/graphics/include/stb.cpp
+    src/graphics/shader/texture.cpp
 )
 
 set(DIRECTORIES

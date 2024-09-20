@@ -6,6 +6,7 @@
 #include <vector>
 #include "graphics/shader/ebo.h"
 #include "graphics/shader/shader.h"
+#include "graphics/shader/texture.h"
 #include "graphics/shader/vao.h"
 #include "graphics/shader/vbo.h"
 #include "graphics/utils/util.h"
@@ -77,28 +78,25 @@ int main() {
 
   // Load the WebP texture
   int img_width, img_height;
-  GLuint texture = loadWebPImage("/Users/mingtongyuan/Downloads/nice_farm.webp",
-                                 &img_width, &img_height);
-  if (texture == 0) {
-    return -1;
-  }
+  // Texture
+  Texture background("/Users/mingtongyuan/Downloads/nice_farm.webp",
+                     GL_TEXTURE_2D);
 
-  // Bind texture unit
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, texture);
-
-  // For adjusting the size
-  glUniform1i(glGetUniformLocation(shader.ID, "texture1"), 0);
+  background.Bind();
+  background.texUnit(shader, "texture1", 0);
 
   // Render loop
   while (!glfwWindowShouldClose(window)) {
     // Clear the screen
     glClear(GL_COLOR_BUFFER_BIT);
+
     // Tell OpenGL which Shader Program we want to use
     shader.Activate();
 
     // Bind texture and draw the quad
-    glBindTexture(GL_TEXTURE_2D, texture);
+    background.Bind();
+
+    // Bind the VAO so OpenGL knows to use it
     VAO1.Bind();
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 

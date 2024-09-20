@@ -13,5 +13,5 @@ void drawClub(float x, float y, float size);
 void drawNumber(float x, float y, float size);
 void drawCard(float x, float y, float width, float height,
               const std::string& rank, const std::string& suit);
-GLuint loadWebPImage(const char* filepath, int* width, int* height);
+uint8_t* loadWebPImage(const char* filepath, int* width, int* height);
 std::string load_file_as_string(const char* filepath);

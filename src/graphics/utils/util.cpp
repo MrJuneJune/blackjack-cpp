@@ -110,7 +110,7 @@ void drawCard(float x, float y, float width, float height,
 }
 
 // Function to load a WebP image and return the decoded image data
-GLuint loadWebPImage(const char* filepath, int* width, int* height) {
+uint8_t* loadWebPImage(const char* filepath, int* width, int* height) {
   // Open the WebP file
   std::ifstream file(filepath, std::ios::binary | std::ios::ate);
   if (!file.is_open()) {
@@ -136,7 +136,7 @@ GLuint loadWebPImage(const char* filepath, int* width, int* height) {
     return 0;
   }
 
-  // Flip the image vertically (manually swap rows)
+  // Flip the image vertically (manually swap rows) since openGL reads from bottom and not top
   int rowSize = 4 * (*width);  // 4 bytes per pixel (RGBA)
   uint8_t* flippedData =
       new uint8_t[*width * *height * 4];  // Allocate memory for flipped image
@@ -146,25 +146,10 @@ GLuint loadWebPImage(const char* filepath, int* width, int* height) {
            rowSize);
   }
 
-  // Generate an OpenGL texture
-  GLuint textureID;
-  glGenTextures(1, &textureID);
-  glBindTexture(GL_TEXTURE_2D, textureID);
-
-  // Upload the image data to the texture
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, *width, *height, 0, GL_RGBA,
-               GL_UNSIGNED_BYTE, flippedData);
-
-  // Set texture parameters
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
   // Free the WebP image memory
   WebPFree(imageData);
 
-  return textureID;
+  return flippedData;
 }
 
 std::string load_file_as_string(const char* filepath) {
