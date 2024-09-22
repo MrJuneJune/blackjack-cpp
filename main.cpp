@@ -3,6 +3,7 @@
 #include <webp/decode.h>
 #include <fstream>
 #include <iostream>
+#include <thread>
 #include <vector>
 #include "graphics/shader/ebo.h"
 #include "graphics/shader/shader.h"
@@ -11,13 +12,22 @@
 #include "graphics/shader/vbo.h"
 #include "graphics/utils/util.h"
 
-// Set up vertex data and buffers
+// Variables to store the camera's position
+float camera_x = 0.0f, camera_y = 0.0f;
+float scroll_sensitivity = 0.1f;
+
+// Scroll callback function to handle mouse wheel scroll
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
+  camera_y += yoffset * scroll_sensitivity;  // Scroll vertically
+  camera_x += xoffset * scroll_sensitivity;  // Scroll horizontally
+}
+
 float vertices[] = {
-    // positions          // texture coords
-    0.5f,  0.5f,  0.0f, 1.0f, 1.0f,  // top right
-    0.5f,  -0.5f, 0.0f, 1.0f, 0.0f,  // bottom right
-    -0.5f, -0.5f, 0.0f, 0.0f, 0.0f,  // bottom left
-    -0.5f, 0.5f,  0.0f, 0.0f, 1.0f   // top left
+    // positions         // texture coords
+    1.0f,  1.0f,  0.0f, 1.0f, 1.0f,  // top right
+    1.0f,  -1.0f, 0.0f, 1.0f, 0.0f,  // bottom right
+    -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,  // bottom left
+    -1.0f, 1.0f,  0.0f, 0.0f, 1.0f   // top left
 };
 unsigned int indices[] = {
     0, 1, 3,  // first triangle
@@ -53,6 +63,9 @@ int main() {
     return -1;
   }
 
+  // scrolling
+  glfwSetScrollCallback(window, scroll_callback);
+
   // Compile the vertex and fragment shaders from files
   Shader shader("./src/graphics/vertex_shader.glsl",
                 "./src/graphics/fragment_shader.glsl");
@@ -79,7 +92,7 @@ int main() {
   // Load the WebP texture
   int img_width, img_height;
   // Texture
-  Texture background("/Users/mingtongyuan/Downloads/nice_farm.webp",
+  Texture background("/Users/mingtongyuan/Downloads/background.webp",
                      GL_TEXTURE_2D);
 
   background.Bind();
@@ -90,16 +103,26 @@ int main() {
     // Clear the screen
     glClear(GL_COLOR_BUFFER_BIT);
 
+    // Apply camera transformations (translate the image)
+    glPushMatrix();
+    glTranslatef(-camera_x, -camera_y,
+                 0.0f);  // Adjust translation based on camera position
+
     // Tell OpenGL which Shader Program we want to use
     shader.Activate();
 
     // Bind texture and draw the quad
+    background.current_x_ += 1;
+    background.current_y_ += 1;
+
+    background.render();
     background.Bind();
 
     // Bind the VAO so OpenGL knows to use it
     VAO1.Bind();
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
+    glPopMatrix();
     // Swap buffers and poll events
     glfwSwapBuffers(window);
     glfwPollEvents();

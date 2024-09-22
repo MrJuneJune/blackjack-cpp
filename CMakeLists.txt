@@ -20,13 +20,6 @@ set(SOURCES
     src/gameplay/characters/player.cpp
     src/gameplay/props/deck.cpp
     src/state/game.cpp
-    src/graphics/utils/util.cpp
-    src/graphics/shader/shader.cpp
-    src/graphics/shader/vbo.cpp
-    src/graphics/shader/ebo.cpp
-    src/graphics/shader/vao.cpp
-    src/graphics/include/stb.cpp
-    src/graphics/shader/texture.cpp
 )
 
 set(DIRECTORIES
@@ -34,36 +27,36 @@ set(DIRECTORIES
     src/gameplay/props
     src/io
     src/state
-    src/graphics
-    src/graphics/utils
-    src/graphics/utils/include
-    src/graphics/shader/
 )
 
 # Ignore warning
 add_definitions(-DGL_SILENCE_DEPRECATION)
 
+## Cardnal sin comments: Add below if I want to make an actual game from it using glfw and openGL as a practice I guess.
 ## Third Party 
-# glfw
-add_subdirectory(${CMAKE_SOURCE_DIR}/third_party/glfw)
+# # glfw
+# add_subdirectory(${CMAKE_SOURCE_DIR}/third_party/glfw)
+# 
+# # Find OpenGL (required by GLFW)
+# find_package(OpenGL REQUIRED)
+# find_package(GLEW REQUIRED)
+# 
+# # Find libwebp
+# find_library(WEBP_LIBRARY webp REQUIRED)
+# 
+# # Include WebP headers (adjust the path to where libwebp is installed, if needed)
+# include_directories("/usr/include/webp")
+# 
+# add_executable(blackjack ${SOURCES})
 
-# Find OpenGL (required by GLFW)
-find_package(OpenGL REQUIRED)
-find_package(GLEW REQUIRED)
-
-# Find libwebp
-find_library(WEBP_LIBRARY webp REQUIRED)
-
-# Include WebP headers (adjust the path to where libwebp is installed, if needed)
-include_directories("/usr/include/webp")
-
-add_executable(blackjack ${SOURCES})
-
-target_link_libraries(blackjack PRIVATE glfw OpenGL::GL GLEW::GLEW ${WEBP_LIBRARY})
+# target_link_libraries(blackjack PRIVATE glfw OpenGL::GL GLEW::GLEW ${WEBP_LIBRARY})
 
 # Include directories for your source files
-target_include_directories(blackjack PRIVATE ${DIRECTORIES} ${GLEW_INCLUDE_DIRS})
+# target_include_directories(blackjack PRIVATE ${DIRECTORIES} ${GLEW_INCLUDE_DIRS})
+target_include_directories(blackjack PRIVATE ${DIRECTORIES})
 
+
+## Debugger stuff
 # Add build type options (Debug and Release)
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Debug)  # Default to Debug build if no type is specified
