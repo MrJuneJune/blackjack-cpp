@@ -20,6 +20,8 @@ set(SOURCES
     src/gameplay/characters/player.cpp
     src/gameplay/props/deck.cpp
     src/state/game.cpp
+    src/utils/loggers.cpp
+    src/utils/helpers.cpp
 )
 
 set(DIRECTORIES
@@ -27,12 +29,13 @@ set(DIRECTORIES
     src/gameplay/props
     src/io
     src/state
+    src/utils
 )
 
-# Ignore warning
-add_definitions(-DGL_SILENCE_DEPRECATION)
-
 ## Cardnal sin comments: Add below if I want to make an actual game from it using glfw and openGL as a practice I guess.
+# Ignore warning
+#add_definitions(-DGL_SILENCE_DEPRECATION)
+
 ## Third Party 
 # # glfw
 # add_subdirectory(${CMAKE_SOURCE_DIR}/third_party/glfw)
@@ -47,7 +50,8 @@ add_definitions(-DGL_SILENCE_DEPRECATION)
 # # Include WebP headers (adjust the path to where libwebp is installed, if needed)
 # include_directories("/usr/include/webp")
 # 
-# add_executable(blackjack ${SOURCES})
+
+add_executable(blackjack ${SOURCES})
 
 # target_link_libraries(blackjack PRIVATE glfw OpenGL::GL GLEW::GLEW ${WEBP_LIBRARY})
 

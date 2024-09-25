@@ -12,6 +12,7 @@ class Player {
   std::vector<std::unique_ptr<Deck::Card>> hands_;
   void fold(std::unique_ptr<Deck::Card>* card);
   void fold_all();
-  std::int32_t hand_values_ints();
+  int32_t hand_values_ints();
+  bool contains_ace = false;
 };
 }  // namespace blackjack
