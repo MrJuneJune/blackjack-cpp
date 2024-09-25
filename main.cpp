@@ -19,6 +19,7 @@ int main() {
   int number_of_players = 0;
   std::cout << "Enter number of players: \n";
   std::cin >> number_of_players;
+  std::cout << "\n---------\n\n";
   while (number_of_players) {
     std::unique_ptr<blackjack::Player> player =
         std::make_unique<blackjack::Player>();
@@ -33,6 +34,7 @@ int main() {
     int input = 0;
     std::cout << "Enter 1 to HIT, 2 to STAND: \n";
     std::cin >> input;
+    std::cout << "\n---------\n\n";
 
     if (input == 1) {
       game.send_action(blackjack::KeyAction::HIT);
