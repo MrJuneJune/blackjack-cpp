@@ -90,7 +90,7 @@ void Game::handle_action(Player* character, const KeyAction::Id& action) {
       break;
     case KeyAction::Id::STAND:
       _player_position += 1;
-      if (_player_position == _players.size()) {
+      if (_player_position >= _players.size()) {
         _state = Game::States::DEALER_TURN;
         dealers_turn();
         determine_winner();
