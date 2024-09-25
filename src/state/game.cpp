@@ -1,6 +1,7 @@
 #include "./game.h"
 #include <cassert>
 #include <iostream>
+#include <memory>
 #include <string>
 #include "../gameplay/characters/player.h"
 #include "../utils/helpers.h"
@@ -8,32 +9,48 @@
 #include "io/key_action.h"
 
 namespace blackjack {
-Game::Game(Player* player1, Player* dealer, Deck* deck) {
+Game::Game(std::unique_ptr<Player> dealer, std::unique_ptr<Deck> deck) {
   _ID = generate_uuid();
-  _players.push_back(player1);
-  _dealer = dealer;
-  _deck = deck;
+  _dealer = std::move(dealer);
+  _deck = std::move(deck);
   _state = Game::States::GAMESTART;
+}
+
+void Game::start() {
+  // Need to have a player.
+  assert(_players.size() > 0);
+
+  // Dealer draw once. In reality, they draw twice,
+  // but unless we want to do something with second card.
+  // We should be fine drawing one
+  _dealer->draw(_deck.get());
 
   // Unneccessary, but just for testing
-  _players.back()->draw(_deck);
-
-  // Dealer draw once. In reality, they draw twice, but unless we want to do something with second card **cheating**
-  // We should be fine drawing one
-  _dealer->draw(_deck);
+  for (auto& player : _players) {
+    player->draw(_deck.get());
+  }
 
   Logger::get().info(current_state());
   _state = Game::States::PLAYER_TURN;
 }
 
+void Game::add_player(std::unique_ptr<Player> player) {
+  assert(_state == Game::States::GAMESTART);
+  _players.push_back(std::move(player));
+}
+
+Player* Game::current_player() {
+  return _players[_player_position % _players.size()].get();
+}
+
 void Game::send_action(const KeyAction::Id& action) {
   switch (_state) {
     case Game::States::DEALER_TURN:
-      handle_action(_dealer, action);
+      handle_action(_dealer.get(), action);
       break;
     case Game::States::PLAYER_TURN:
       // TODO(June): Update this to include a logic for which player it is for.
-      handle_action(_players.back(), action);
+      handle_action(current_player(), action);
       break;
     default:
       break;
@@ -41,46 +58,50 @@ void Game::send_action(const KeyAction::Id& action) {
 }
 
 void Game::dealers_turn() {
+  assert(_state == Game::States::DEALER_TURN);
+
   int32_t dealer_total = _dealer->hand_values_ints();
 
   // Keep drawing until it is 16
   while (dealer_total <= 16) {
-    _dealer->draw(_deck);
+    _dealer->draw(_deck.get());
     Logger::get().info("Dealer Draws\n");
     Logger::get().info(current_state());
     dealer_total = _dealer->hand_values_ints();
   }
-};
+}
 
 void Game::handle_action(Player* character, const KeyAction::Id& action) {
+  assert(_state == Game::States::PLAYER_TURN);
   switch (action) {
     case KeyAction::Id::HIT:
-      character->draw(_deck);
+      character->draw(_deck.get());
       Logger::get().info(current_state());
-      if (is_busted(character)) {
-        _state = Game::States::GAMEOVER;
-        determine_winner();
-      };
+      // TODO(June): Update this logic when there is more than one players.
+      if (blackjack_or_busted(*character) > 0) {
+        if (_player_position == _players.size() - 1) {
+          _state = Game::States::GAMEOVER;
+          determine_winner();
+        }
+        // go to next player
+        _player_position += 1;
+      }
       break;
     case KeyAction::Id::STAND:
-      next_state();
-      dealers_turn();
-      _state = Game::States::GAMEOVER;
-      determine_winner();
+      _player_position += 1;
+      if (_player_position == _players.size()) {
+        _state = Game::States::DEALER_TURN;
+        dealers_turn();
+        determine_winner();
+        _state = Game::States::GAMEOVER;
+      } else {
+        Logger::get().info("Next Player " +
+                           std::to_string(_player_position + 1));
+      }
       break;
     default:
       break;
   }
-}
-
-void Game::next_state() {
-  // Game should be continuing..
-  assert(_state != Game::States::GAMEOVER);
-
-  int8_t NUMBER_OF_STATE = 4;
-  int8_t new_state = (static_cast<int8_t>(_state) + 1) % NUMBER_OF_STATE;
-  _state = new_state != 0 ? static_cast<Game::States>(new_state)
-                          : Game::States::GAMEOVER;
 }
 
 bool Game::alive() {
@@ -88,35 +109,56 @@ bool Game::alive() {
 }
 
 std::string Game::current_state() {
+  std::string player_msg =
+      _player_position < _players.size()
+          ? "\nPlayer " + std::to_string(_player_position + 1) + ": " +
+                std::to_string(current_player()->hand_values_ints()) + "\n"
+          : "\n";
+
   return _ID + ":\nCurrent State:\nDealer:\t" +
-         std::to_string(_dealer->hand_values_ints()) + "\nPlayer:\t" +
-         std::to_string(_players.back()->hand_values_ints()) + "\n";
+         std::to_string(_dealer->hand_values_ints()) + player_msg;
 }
 
-bool Game::is_busted(Player* player) {
-  const int& total = player->hand_values_ints();
+Game::PlayerState Game::blackjack_or_busted(const Player& player) {
+  const int& total = player.hand_values_ints();
 
-  return total > 21;
+  if (total < 21) {
+    return Game::PlayerState::ALIVE;
+  } else if (total == 21) {
+    Logger::get().info("Player " + std::to_string(_player_position + 1) +
+                       " WON!");
+    return Game::PlayerState::BLACKJACK;
+  } else {
+    Logger::get().info("Player " + std::to_string(_player_position + 1) +
+                       " BUSTED!");
+    return Game::PlayerState::BUSTED;
+  }
 }
 
 void Game::determine_winner() {
-  const int& player_total = _players.back()->hand_values_ints();
   const int& dealer_total = _dealer->hand_values_ints();
-
-  Logger::get().info(current_state());
-
-  if (player_total > 21) {
-    std::cout << "Player busted! Dealer wins!" << std::endl;
-    _state = Game::States::GAMEOVER;
-  } else if (dealer_total > 21) {
-    std::cout << "Dealer busted! Player wins!" << std::endl;
-    _state = Game::States::GAMEOVER;
-  } else if (player_total > dealer_total) {
-    std::cout << "Player wins!" << std::endl;
-    _state = Game::States::GAMEOVER;
-  } else if (player_total < dealer_total) {
-    std::cout << "Dealer wins!" << std::endl;
-    _state = Game::States::GAMEOVER;
+  int pos = 1;
+  for (auto& player : _players) {
+    const int& player_total = player->hand_values_ints();
+    std::cout << "For Player " + std::to_string(pos) << "\n";
+    if (player_total > 21) {
+      std::cout << "Player busted! Dealer wins!" << "\n";
+      _state = Game::States::GAMEOVER;
+    } else if (dealer_total > 21) {
+      std::cout << "Dealer busted! Player wins!" << "\n";
+      _state = Game::States::GAMEOVER;
+    } else if (player_total > dealer_total) {
+      std::cout << "Player wins!" << "\n";
+      _state = Game::States::GAMEOVER;
+    } else if (player_total < dealer_total) {
+      std::cout << "Dealer wins!" << "\n";
+      _state = Game::States::GAMEOVER;
+    }
+    pos += 1;
   }
+}
+
+Game::~Game() {
+  Logger::get().info("DELETING GAME");
 }
 }  // namespace blackjack

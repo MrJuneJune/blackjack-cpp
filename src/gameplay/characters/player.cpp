@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <utility>
 #include <vector>
+#include "../utils/loggers.h"
 
 namespace blackjack {
 Player::Player() {
@@ -27,7 +28,7 @@ void Player::fold_all() {
   hands_.clear();
 }
 
-int32_t Player::hand_values_ints() {
+int32_t Player::hand_values_ints() const {
   int32_t sums = 0;
   int8_t number_of_aces = 0;
   for (auto& card : hands_) {
@@ -45,5 +46,9 @@ int32_t Player::hand_values_ints() {
     }
   }
   return sums;
+}
+
+Player::~Player() {
+  Logger::get().info("DELETING PLAYER");
 }
 }  // namespace blackjack

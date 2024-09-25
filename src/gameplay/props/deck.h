@@ -1,6 +1,5 @@
 #pragma once
 
-#include <algorithm>
 #include <memory>
 #include <vector>
 
@@ -35,8 +34,10 @@ class Deck {
     Suits suit;
   };
 
-  std::unique_ptr<Card> draw();
   Deck();
+  ~Deck();
+
+  std::unique_ptr<Card> draw();
   void shuffle();
   void reset();
   void create_deck();

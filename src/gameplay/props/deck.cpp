@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <memory>
 #include <random>
+#include "../utils/loggers.h"
 
 namespace blackjack {
 Deck::Deck() {
@@ -44,5 +45,9 @@ void Deck::shuffle() {
   std::mt19937 g(rd());
 
   std::shuffle(cards_.begin(), cards_.end(), g);
+}
+
+Deck::~Deck() {
+  Logger::get().info("DELETING DECK");
 }
 }  // namespace blackjack

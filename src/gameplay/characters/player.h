@@ -7,12 +7,15 @@
 namespace blackjack {
 class Player {
  public:
-  void draw(Deck* deck);
   Player();
+  ~Player();
+  // Probably need to use shared ptr for this.
+  void draw(Deck* deck);
+
   std::vector<std::unique_ptr<Deck::Card>> hands_;
   void fold(std::unique_ptr<Deck::Card>* card);
   void fold_all();
-  int32_t hand_values_ints();
+  int32_t hand_values_ints() const;
   bool contains_ace = false;
 };
 }  // namespace blackjack

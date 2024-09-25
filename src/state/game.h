@@ -1,3 +1,4 @@
+#include <memory>
 #include <string>
 #include <vector>
 #include "../gameplay/characters/player.h"
@@ -7,10 +8,14 @@ namespace blackjack {
 class Game {
 
  public:
-  Game(Player* player1, Player* dealer, Deck* deck);
+  Game(std::unique_ptr<Player> dealer, std::unique_ptr<Deck> deck);
+  ~Game();
+  void start();
+  void add_player(std::unique_ptr<Player> player);
   void send_action(const KeyAction::Id& action);
   void handle_action(Player* character, const KeyAction::Id& action);
   void determine_winner();
+  Player* current_player();
   bool alive();
 
  private:
@@ -23,20 +28,26 @@ class Game {
     GAMESTART,
   };
 
-  void next_state();
+  enum PlayerState : int8_t {
+    ALIVE,
+    BUSTED,
+    BLACKJACK,
+  };
 
   void dealers_turn();
 
   std::string current_state();
 
-  bool is_busted(Player* player);
+  PlayerState blackjack_or_busted(const Player& player);
 
-  std::vector<Player*> _players;
+  std::vector<std::unique_ptr<Player>> _players;
 
-  Player* _dealer;
+  std::unique_ptr<Player> _dealer;
 
-  Deck* _deck;
+  std::unique_ptr<Deck> _deck;
 
   States _state;
+
+  int _player_position = 0;
 };
 }  // namespace blackjack
