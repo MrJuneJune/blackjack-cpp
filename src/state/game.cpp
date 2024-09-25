@@ -85,6 +85,7 @@ void Game::handle_action(Player* character, const KeyAction::Id& action) {
         }
         // go to next player
         _player_position += 1;
+        Logger::get().info(current_state());
       }
       break;
     case KeyAction::Id::STAND:
@@ -97,6 +98,7 @@ void Game::handle_action(Player* character, const KeyAction::Id& action) {
       } else {
         Logger::get().info("Next Player " +
                            std::to_string(_player_position + 1));
+        Logger::get().info(current_state());
       }
       break;
     default:
@@ -138,9 +140,10 @@ Game::PlayerState Game::blackjack_or_busted(const Player& player) {
 void Game::determine_winner() {
   const int& dealer_total = _dealer->hand_values_ints();
   int pos = 1;
+  std::cout << "\n\n\n---------------------\n\n\n";
   for (auto& player : _players) {
     const int& player_total = player->hand_values_ints();
-    std::cout << "For Player " + std::to_string(pos) << "\n";
+    std::cout << "\nFor Player " + std::to_string(pos) << "\n\n";
     if (player_total > 21) {
       std::cout << "Player busted! Dealer wins!" << "\n";
       _state = Game::States::GAMEOVER;
@@ -156,6 +159,7 @@ void Game::determine_winner() {
     }
     pos += 1;
   }
+  std::cout << "\n\n\n---------------------\n\n\n";
 }
 
 Game::~Game() {
